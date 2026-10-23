@@ -1,0 +1,563 @@
+<title>Selector de análisis estadístico</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Concepto: herramienta de consulta sobria, como una ficha técnica de laboratorio.
+   Pregunta a la izquierda, ruta recorrida arriba, resultado con la ruta exacta de Minitab en monoespaciada. */
+:root {
+  --bg: #f3f6f7;
+  --surface: #ffffff;
+  --ink: #14232b;
+  --muted: #53646e;
+  --line: #d3dce1;
+  --accent: #0b6e7f;
+  --accent-ink: #ffffff;
+  --accent-soft: #dff0f3;
+  --code-bg: #edf2f4;
+  --note-bg: #fff4de;
+  --note-ink: #6a4300;
+  --note-line: #e8c98a;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e171b;
+    --surface: #152228;
+    --ink: #e5eef1;
+    --muted: #9db0b8;
+    --line: #2a3b43;
+    --accent: #52c3d6;
+    --accent-ink: #06222a;
+    --accent-soft: #12323a;
+    --code-bg: #0d1a1f;
+    --note-bg: #2c2210;
+    --note-ink: #f0cf93;
+    --note-line: #5b4620;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e171b;
+  --surface: #152228;
+  --ink: #e5eef1;
+  --muted: #9db0b8;
+  --line: #2a3b43;
+  --accent: #52c3d6;
+  --accent-ink: #06222a;
+  --accent-soft: #12323a;
+  --code-bg: #0d1a1f;
+  --note-bg: #2c2210;
+  --note-ink: #f0cf93;
+  --note-line: #5b4620;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+header h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 6px; font-weight: 600; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip {
+  font: inherit; font-size: 0.85rem; cursor: pointer;
+  background: var(--accent-soft); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 4px 12px; min-width: 0; max-width: 100%;
+  overflow-wrap: anywhere; text-align: left;
+}
+.chip:hover { border-color: var(--accent); }
+.sep { color: var(--muted); }
+.spacer { flex: 1; }
+.ghost {
+  font: inherit; font-size: 0.88rem; cursor: pointer; color: var(--accent);
+  background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px;
+}
+.ghost:hover { border-color: var(--accent); }
+
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px; min-width: 0;
+}
+.step { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.card h2 { font-size: 1.3rem; line-height: 1.3; margin: 0 0 14px; font-weight: 600; text-wrap: balance; }
+.opts { display: flex; flex-direction: column; gap: 10px; }
+.opt {
+  font: inherit; text-align: left; cursor: pointer; width: 100%;
+  background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.opt:hover { border-color: var(--accent); background: var(--accent-soft); }
+.opt b { font-weight: 600; }
+.opt span { color: var(--muted); font-size: 0.92rem; }
+
+.note {
+  margin: 16px 0 0; padding: 10px 14px; border-radius: 8px; font-size: 0.92rem;
+  background: var(--note-bg); color: var(--note-ink); border: 1px solid var(--note-line);
+}
+.note b { font-weight: 600; }
+
+.result { border-color: var(--accent); border-width: 2px; }
+.result .tag { display: inline-block; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--accent); color: var(--accent-ink); border-radius: 4px; padding: 2px 8px; margin-bottom: 8px; }
+.result h2 { font-size: 1.5rem; margin-bottom: 6px; }
+.lead { margin: 0 0 16px; color: var(--muted); max-width: 64ch; }
+.grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 640px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+.block { min-width: 0; }
+.block h3 { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; font-weight: 500; }
+.block p { margin: 0; }
+.path {
+  font-family: var(--font-mono); font-size: 0.86rem; background: var(--code-bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; margin: 0 0 6px;
+  overflow-wrap: anywhere; line-height: 1.5;
+}
+.path small { display: block; font-family: var(--font-body); color: var(--muted); font-size: 0.8rem; margin-bottom: 2px; }
+.hyp { font-family: var(--font-mono); font-size: 0.92rem; }
+.full { grid-column: 1 / -1; }
+footer { color: var(--muted); font-size: 0.85rem; max-width: 70ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Selector de análisis estadístico</h1>
+    <p>Sirve para cualquier conjunto de datos. Responde unas preguntas y la página te sugiere el análisis o la prueba, dónde está en Minitab, qué revisar antes y cómo leer el resultado.</p>
+  </header>
+
+  <div class="bar" id="bar" aria-label="Respuestas anteriores"></div>
+  <div id="stage" aria-live="polite"></div>
+
+  <footer>
+    Los nombres de los menús de Minitab pueden variar según la versión. Los criterios de normalidad y de varianzas son orientativos: decide con gráficos, pruebas y criterio técnico.
+  </footer>
+</div>
+
+<script>
+var NODES = {
+  start: { q: "¿Qué quieres hacer con tus datos?", help: "Elige el objetivo del análisis. Si aún no sabes qué buscar, empieza por describir y explorar.",
+    opts: [
+      { t: "Describir y explorar", d: "Resumir, graficar y revisar la calidad de los datos", to: "desc" },
+      { t: "Comparar grupos o contra una referencia", d: "Saber si hay diferencias entre condiciones, tratamientos o contra un valor esperado", to: "cmp" },
+      { t: "Relacionar variables", d: "Medir si dos variables se asocian o predecir una a partir de otras", to: "rel" },
+      { t: "Verificar supuestos o calidad", d: "Normalidad, varianzas, atípicos o estabilidad en el tiempo", to: "sup" }
+    ] },
+
+  desc: { q: "¿Qué tipo de variable quieres describir?",
+    opts: [
+      { t: "Numérica", d: "Una medición: masa, tiempo, concentración, temperatura", to: "R:descNum" },
+      { t: "Categórica", d: "Categorías o conteos: tipo, turno, aprobado o rechazado", to: "R:descCat" },
+      { t: "Dos variables numéricas, solo para ver cómo se comportan juntas", d: "Exploración visual antes de cualquier prueba", to: "R:descPair" }
+    ] },
+
+  sup: { q: "¿Qué quieres verificar?",
+    opts: [
+      { t: "Si los datos siguen una distribución normal", d: "Antes de elegir una prueba paramétrica", to: "R:normal" },
+      { t: "Si los grupos tienen varianzas similares", d: "Antes de un ANOVA o una prueba t", to: "R:varTest" },
+      { t: "Si hay valores atípicos", d: "Valores que se separan del resto", to: "R:outlier" },
+      { t: "Si el proceso es estable en el tiempo", d: "Deriva, cambios de nivel o tendencia en datos ordenados", to: "R:imr" }
+    ] },
+
+  cmp: { q: "¿Qué tipo de variable es la respuesta?", help: "La respuesta es la variable que mides y quieres explicar.",
+    opts: [
+      { t: "Numérica", d: "Se mide en una escala: rendimiento, pH, tiempo, resistencia", to: "num" },
+      { t: "Categórica", d: "Se clasifica: cumple o no cumple, tipo de falla, turno", to: "cat" }
+    ] },
+  num: { q: "¿Qué comparación necesitas?",
+    opts: [
+      { t: "Comparar medias entre grupos", d: "Por ejemplo, una respuesta medida bajo distintas condiciones", to: "groups" },
+      { t: "Comparar una media con un valor de referencia", d: "Por ejemplo, un promedio contra una especificación", to: "one" }
+    ] },
+  cat: { q: "¿Qué quieres comparar?",
+    opts: [
+      { t: "Dos variables categóricas: ¿están asociadas?", d: "Por ejemplo, turno y tipo de falla", to: "R:chiAssoc" },
+      { t: "Una variable contra proporciones esperadas", d: "Por ejemplo, si las fallas se reparten por igual entre turnos", to: "R:chiGof" },
+      { t: "La proporción de éxito entre dos grupos", d: "Por ejemplo, porcentaje de unidades conformes en dos proveedores", to: "R:prop2" }
+    ] },
+  groups: { q: "¿Cuántos grupos comparas?",
+    opts: [
+      { t: "Dos grupos", d: "Por ejemplo, método A contra método B", to: "two" },
+      { t: "Tres o más grupos", d: "Por ejemplo, varios niveles de un factor", to: "three" }
+    ] },
+  two: { q: "¿Cómo se relacionan los dos grupos?",
+    opts: [
+      { t: "Independientes", d: "Cada grupo tiene unidades distintas", to: "twoNorm" },
+      { t: "Pareados", d: "Las mismas unidades se miden dos veces, por ejemplo antes y después", to: "pairNorm" }
+    ] },
+  twoNorm: { q: "¿Los datos de cada grupo son aproximadamente normales?",
+    hint: "Revisa con un boxplot y con Stat > Basic Statistics > Normality Test.",
+    opts: [
+      { t: "Sí, o las muestras son grandes", d: "Sin atípicos que distorsionen la media", to: "R:t2" },
+      { t: "No, o hay pocos datos con atípicos", d: "La media no representa bien al grupo", to: "R:mw" }
+    ] },
+  pairNorm: { q: "¿Las diferencias entre las dos mediciones son aproximadamente normales?",
+    hint: "Calcula la diferencia con Calc > Calculator y revisa su normalidad.",
+    opts: [
+      { t: "Sí", d: "Las diferencias se distribuyen de forma simétrica", to: "R:tp" },
+      { t: "No", d: "Hay asimetría o atípicos en las diferencias", to: "R:wil" }
+    ] },
+  three: { q: "¿Cuántos factores definen los grupos?",
+    opts: [
+      { t: "Uno", d: "Por ejemplo, solo el tipo de tratamiento", to: "a1Norm" },
+      { t: "Dos", d: "Por ejemplo, tratamiento y operador", to: "R:twoway" }
+    ] },
+  a1Norm: { q: "¿Los residuos del modelo son aproximadamente normales?",
+    hint: "Corre primero el ANOVA, guarda los residuos y revísalos. Si un solo dato rompe la normalidad, analiza con y sin ese dato, compara y documenta la decisión.",
+    opts: [
+      { t: "Sí", d: "La gráfica de probabilidad normal sigue una línea recta", to: "a1Var" },
+      { t: "No", d: "Hay desviaciones claras o valores atípicos", to: "R:kw" }
+    ] },
+  a1Var: { q: "¿Las varianzas de los grupos son similares?",
+    hint: "Stat > ANOVA > Test for Equal Variances. Minitab muestra Bartlett (si hay normalidad) y Levene (si no la hay).",
+    opts: [
+      { t: "Sí", d: "El valor p de la prueba de varianzas es mayor que 0.05", to: "R:anova1" },
+      { t: "No", d: "Un grupo varía mucho más que los otros", to: "R:welch" }
+    ] },
+
+  rel: { q: "¿Qué tipos de variables quieres relacionar?",
+    opts: [
+      { t: "Dos variables numéricas", d: "Por ejemplo, temperatura y rendimiento", to: "relation" },
+      { t: "Una numérica y una categórica", d: "Es una comparación de grupos", to: "groups" },
+      { t: "Dos categóricas", d: "Por ejemplo, turno y tipo de falla", to: "R:chiAssoc" }
+    ] },
+  relation: { q: "¿Qué necesitas?",
+    opts: [
+      { t: "Medir qué tan fuerte es la relación", d: "Fuerza y dirección, sin una variable dependiente", to: "corrNorm" },
+      { t: "Predecir una variable a partir de otras", d: "Una respuesta explicada por uno o más predictores", to: "R:reg" }
+    ] },
+  corrNorm: { q: "¿La relación es lineal y las variables son aproximadamente normales, sin atípicos marcados?",
+    hint: "Mira el diagrama de dispersión (Graph > Scatterplot) y revisa la normalidad de cada variable.",
+    opts: [
+      { t: "Sí", d: "Los puntos siguen una línea y no hay valores extremos", to: "R:corr" },
+      { t: "No", d: "La relación es curva, hay atípicos o no hay normalidad", to: "R:spear" }
+    ] },
+  one: { q: "¿Los datos son aproximadamente normales?",
+    opts: [
+      { t: "Sí", d: "O la muestra es grande", to: "R:t1" },
+      { t: "No", d: "Asimetría o atípicos marcados", to: "R:w1" }
+    ] }
+};
+
+var RESULTS = {
+  descNum: { kind: "desc", name: "Estadística descriptiva de una variable numérica", lead: "Resume el centro, la dispersión y la forma de los datos, y revisa su calidad antes de cualquier prueba.",
+    gets: "Cantidad de datos (N), faltantes (N*), media, mediana, desviación estándar, mínimo, máximo y cuartiles. Con el resumen gráfico se agregan el histograma, el boxplot y el intervalo de confianza de la media.",
+    minitab: [{ l: "Resumen numérico", p: "Stat > Basic Statistics > Display Descriptive Statistics" }, { l: "Resumen gráfico", p: "Stat > Basic Statistics > Graphical Summary" }, { l: "Gráficos", p: "Graph > Histogram, Graph > Boxplot, Graph > Individual Value Plot" }],
+    checks: [{ l: "Valores imposibles", p: "Revisar mínimo y máximo contra los límites físicos de la variable" }, { l: "Faltantes", p: "Comparar N* con las celdas vacías del archivo original" }, { l: "Atípicos", p: "Graph > Boxplot" }],
+    read: "Compara media y mediana: si difieren mucho, hay asimetría o atípicos. La desviación estándar indica la dispersión; el coeficiente de variación (desviación entre media) permite comparar variables con unidades distintas.",
+    fail: "",
+    tip: "Para comparar grupos, agrega la variable de grupo en \"By variables\". Sirve para ver si el patrón cambia entre condiciones." },
+  descCat: { kind: "desc", name: "Estadística descriptiva de una variable categórica", lead: "Cuenta y grafica las categorías para ver su distribución.",
+    gets: "Frecuencias y porcentajes por categoría, y gráficos de barras o de pastel.",
+    minitab: [{ l: "Conteos", p: "Stat > Tables > Tally Individual Variables (marcar Counts y Percents)" }, { l: "Gráfico de barras", p: "Graph > Bar Chart" }, { l: "Tabla de dos variables", p: "Stat > Tables > Cross Tabulation and Chi-Square" }],
+    checks: [{ l: "Categorías duplicadas por escritura", p: "Revisar que no existan variantes de la misma categoría (por ejemplo, mayúsculas o espacios)" }, { l: "Categorías con pocos datos", p: "Revisar si conviene agruparlas" }],
+    read: "Mira qué categorías dominan y cuáles casi no aparecen. Los porcentajes permiten comparar muestras de distinto tamaño.",
+    fail: "",
+    tip: "Para el análisis de dos variables categóricas, la tabla cruzada es el paso previo a la prueba de chi-cuadrado." },
+  descPair: { kind: "desc", name: "Exploración conjunta de dos variables numéricas", lead: "Mira cómo se comportan juntas antes de calcular una correlación o ajustar un modelo.",
+    gets: "Un diagrama de dispersión que muestra la forma de la relación (lineal, curva o sin patrón), grupos y valores extremos.",
+    minitab: [{ l: "Dispersión", p: "Graph > Scatterplot > Simple (o With Groups)" }, { l: "Varias variables a la vez", p: "Graph > Matrix Plot" }, { l: "Resumen numérico", p: "Stat > Basic Statistics > Display Descriptive Statistics" }],
+    checks: [{ l: "Forma", p: "¿La nube de puntos es una línea, una curva o no tiene patrón?" }, { l: "Atípicos", p: "Puntos aislados que podrían dominar una correlación" }],
+    read: "Si ves una tendencia clara, pasa a correlación o regresión. Si ves grupos separados, probablemente hay una variable de agrupación que debes incluir.",
+    fail: "",
+    tip: "Siempre grafica antes de calcular r: dos conjuntos muy distintos pueden dar el mismo coeficiente." },
+  normal: { name: "Prueba de normalidad (Anderson-Darling)", lead: "Evalúa si los datos se pueden tratar como provenientes de una distribución normal.",
+    h0: "Los datos siguen una distribución normal", h1: "Los datos no siguen una distribución normal",
+    minitab: [{ l: "Prueba", p: "Stat > Basic Statistics > Normality Test" }, { l: "Alternativa gráfica", p: "Graph > Probability Plot" }],
+    checks: [{ l: "Forma del histograma", p: "Graph > Histogram" }, { l: "Tamaño de muestra", p: "Con pocos datos la prueba tiene poca potencia; con muchos detecta desviaciones irrelevantes" }],
+    read: "Aquí se lee al revés: si p es mayor que α (0.05), no hay evidencia contra la normalidad. Si p es menor, hay evidencia de que no es normal. Apóyate en la gráfica: los puntos deben seguir la línea.",
+    fail: "Si los datos no son normales, usa una prueba no paramétrica o revisa si un atípico es la causa.",
+    tip: "Cuando se compara entre grupos, la normalidad se revisa sobre los residuos del modelo, no sobre la columna completa." },
+  varTest: { name: "Prueba de igualdad de varianzas", lead: "Evalúa si la dispersión es similar en todos los grupos.",
+    h0: "Todas las varianzas son iguales", h1: "Al menos una varianza es diferente",
+    minitab: [{ l: "Tres o más grupos", p: "Stat > ANOVA > Test for Equal Variances" }, { l: "Dos grupos", p: "Stat > Basic Statistics > 2 Variances" }],
+    checks: [{ l: "Qué prueba leer", p: "Bartlett si los datos son normales; Levene si no lo son" }, { l: "Visualización", p: "Graph > Boxplot > With Groups" }],
+    read: "Si p es mayor que α, no hay evidencia de que las varianzas difieran y el supuesto es razonable. Si p es menor, las varianzas no son iguales.",
+    fail: "Si las varianzas difieren, usa la versión de Welch de la prueba t o del ANOVA.",
+    tip: "Un p alto no demuestra que las varianzas sean iguales; solo indica que no se detectó diferencia." },
+  outlier: { name: "Detección de valores atípicos", lead: "Identifica datos que se separan del resto y decide si son errores o eventos reales.",
+    h0: "No hay atípicos (Grubbs)", h1: "El valor más extremo es un atípico (Grubbs)",
+    minitab: [{ l: "Gráfico", p: "Graph > Boxplot (con o sin grupos)" }, { l: "Prueba", p: "Stat > Basic Statistics > Outlier Test (Grubbs)" }],
+    checks: [{ l: "Por grupo", p: "Un valor puede ser normal en el conjunto y atípico dentro de su grupo" }, { l: "Causa", p: "Revisar la bitácora y las variables relacionadas de esa fila" }],
+    read: "Grubbs evalúa solo el valor más extremo y supone normalidad. Si p es menor que α, ese valor es un atípico. Que sea atípico no significa que sea un error.",
+    fail: "",
+    tip: "Un error se corrige o se retira. Un evento real se conserva. Si no hay evidencia, conserva el dato, márcalo y analiza con y sin él." },
+  imr: { name: "Carta de control I-MR", lead: "Revisa si un proceso es estable en el tiempo (deriva, cambios de nivel, tendencias).",
+    h0: "", h1: "",
+    gets: "Una carta de individuos y una de rangos móviles, con límites de control y puntos que violan reglas.",
+    minitab: [{ l: "Carta", p: "Stat > Control Charts > Variables Charts for Individuals > I-MR" }, { l: "Gráfico simple", p: "Graph > Time Series Plot" }],
+    checks: [{ l: "Orden de los datos", p: "Los datos deben estar en orden cronológico" }, { l: "Reglas", p: "En Tests, activa las pruebas de causas especiales" }],
+    read: "Los puntos fuera de los límites o los patrones (tendencia, desplazamiento) indican causas especiales. El proceso es estable si solo hay variación aleatoria.",
+    fail: "",
+    tip: "Úsala también para detectar deriva de un instrumento, como un electrodo que se desajusta." },
+  t2: { name: "Prueba t de dos muestras (Welch)", lead: "Compara las medias de dos grupos independientes.",
+    h0: "μ₁ = μ₂ (las dos medias son iguales)", h1: "μ₁ ≠ μ₂ (las medias son diferentes)",
+    minitab: [{ l: "Prueba", p: "Stat > Basic Statistics > 2-Sample t" }],
+    checks: [{ l: "Normalidad por grupo", p: "Stat > Basic Statistics > Normality Test" }, { l: "Atípicos", p: "Graph > Boxplot > With Groups" }],
+    read: "Si p es menor que α (0.05), hay evidencia de que las medias difieren. Mira también la diferencia estimada y su intervalo de confianza para saber qué tan grande es.",
+    fail: "Si no se cumple la normalidad: Mann-Whitney.",
+    tip: "En Minitab, deja desmarcada la opción de asumir varianzas iguales: así usa la versión de Welch." },
+  mw: { name: "Prueba de Mann-Whitney", lead: "Alternativa sin supuesto de normalidad para comparar dos grupos independientes.",
+    h0: "η₁ = η₂ (las dos medianas son iguales)", h1: "η₁ ≠ η₂ (las medianas son diferentes)",
+    minitab: [{ l: "Prueba", p: "Stat > Nonparametrics > Mann-Whitney" }],
+    checks: [{ l: "Forma de las distribuciones", p: "Graph > Histogram > With Groups" }],
+    read: "Si p es menor que α, hay evidencia de que las medianas difieren.",
+    fail: "Funciona mejor si las dos distribuciones tienen forma parecida. Revísalo con histogramas.",
+    tip: "Con muestras pequeñas, la prueba tiene poca potencia: un p grande no demuestra que los grupos sean iguales." },
+  tp: { name: "Prueba t pareada", lead: "Compara dos mediciones hechas sobre las mismas unidades.",
+    h0: "μ de las diferencias = 0", h1: "μ de las diferencias ≠ 0",
+    minitab: [{ l: "Prueba", p: "Stat > Basic Statistics > Paired t" }],
+    checks: [{ l: "Normalidad de las diferencias", p: "Calc > Calculator (diferencia), luego Stat > Basic Statistics > Normality Test" }],
+    read: "Si p es menor que α, el cambio medio entre las dos mediciones no se explica por el azar.",
+    fail: "Si las diferencias no son normales: Wilcoxon sobre las diferencias.",
+    tip: "Pareado significa que cada dato de un grupo tiene su pareja en el otro." },
+  wil: { name: "Wilcoxon de una muestra sobre las diferencias", lead: "Alternativa sin supuesto de normalidad para datos pareados.",
+    h0: "La mediana de las diferencias = 0", h1: "La mediana de las diferencias ≠ 0",
+    minitab: [{ l: "Diferencias", p: "Calc > Calculator (columna Dif = medición 2 − medición 1)" }, { l: "Prueba", p: "Stat > Nonparametrics > 1-Sample Wilcoxon" }],
+    checks: [{ l: "Simetría de las diferencias", p: "Graph > Histogram" }],
+    read: "Si p es menor que α, la mediana de las diferencias es distinta de cero.", fail: "", tip: "" },
+  anova1: { name: "ANOVA de un factor", lead: "Compara las medias de tres o más grupos definidos por un factor.",
+    h0: "Todas las medias son iguales", h1: "Al menos una media es diferente",
+    minitab: [{ l: "Prueba", p: "Stat > ANOVA > One-Way" }, { l: "Comparaciones por pares", p: "Comparisons > Tukey" }],
+    checks: [{ l: "Residuos", p: "Graphs > Four in one" }, { l: "Normalidad", p: "Guardar residuos y usar Stat > Basic Statistics > Normality Test" }, { l: "Varianzas", p: "Stat > ANOVA > Test for Equal Variances" }],
+    read: "Si p es menor que α, al menos una media difiere. Tukey indica cuáles. Revisa también R² y el gráfico de intervalos.",
+    fail: "Si falla la normalidad: Kruskal-Wallis. Si fallan las varianzas: ANOVA de Welch.",
+    tip: "Un F alto significa que la diferencia entre grupos se distingue con claridad del ruido, no necesariamente que sea grande. Para el tamaño del efecto mira las diferencias de medias y su intervalo.",
+    post: { intro: "Solo si el ANOVA es significativo (p menor que α). Con varianzas similares:", items: [
+      { l: "Todos los pares: Tukey", p: "One-Way > Comparisons > Tukey (95 %). Es la opción por defecto." },
+      { l: "Cada grupo contra un control: Dunnett", p: "One-Way > Comparisons > Dunnett, indicando el grupo control" },
+      { l: "Buscar el mejor grupo: Hsu MCB", p: "One-Way > Comparisons > Hsu MCB" }],
+      note: "Evita hacer varias pruebas t sueltas: inflan el riesgo de falsos positivos. En la salida, grupos con la misma letra no difieren." } },
+  welch: { name: "ANOVA de Welch", lead: "Compara medias de tres o más grupos cuando las varianzas no son iguales.",
+    h0: "Todas las medias son iguales", h1: "Al menos una media es diferente",
+    minitab: [{ l: "Prueba", p: "Stat > ANOVA > One-Way, y desmarcar \"Assume equal variances\"" }, { l: "Comparaciones por pares", p: "Comparisons > Games-Howell" }],
+    checks: [{ l: "Normalidad de los residuos", p: "Stat > Basic Statistics > Normality Test" }],
+    read: "Se lee igual que el ANOVA clásico: p menor que α indica que al menos una media difiere.",
+    fail: "", tip: "Con varianzas muy distintas, el ANOVA clásico pierde confiabilidad.",
+    post: { intro: "Solo si el ANOVA de Welch es significativo:", items: [
+      { l: "Todos los pares: Games-Howell", p: "One-Way > Comparisons > Games-Howell (no exige varianzas iguales)" }],
+      note: "No uses Tukey aquí: supone varianzas iguales." } },
+  kw: { name: "Prueba de Kruskal-Wallis", lead: "Alternativa sin supuesto de normalidad para tres o más grupos.",
+    h0: "Todas las medianas son iguales", h1: "Al menos una mediana es diferente",
+    minitab: [{ l: "Prueba", p: "Stat > Nonparametrics > Kruskal-Wallis" }],
+    checks: [{ l: "Forma de las distribuciones", p: "Graph > Boxplot > With Groups" }],
+    read: "Si p es menor que α, al menos un grupo difiere. Si Minitab muestra 0.000, reporta p < 0.001. Para saber cuáles grupos difieren, compáralos por pares.",
+    fail: "", tip: "Decide si conservar o no los atípicos antes de elegir la prueba, no después de ver el p.",
+    post: { intro: "Solo si Kruskal-Wallis es significativo. La prueba estándar es Dunn, pero verifica si tu versión de Minitab la incluye en el menú:", items: [
+      { l: "Si tu versión no la tiene: Mann-Whitney por pares con corrección de Bonferroni", p: "Stat > Nonparametrics > Mann-Whitney para cada pareja, y comparar cada p contra α dividido entre el número de parejas (con 3 grupos: 0.05 / 3 = 0.0167)" }],
+      note: "Requiere validación según tu versión de Minitab. Informa siempre qué corrección usaste." } },
+  twoway: { name: "ANOVA de dos factores", lead: "Compara medias según dos factores y permite evaluar su interacción.",
+    h0: "Ningún factor ni la interacción afectan la media", h1: "Al menos un factor o la interacción afecta la media",
+    minitab: [{ l: "Prueba", p: "Stat > ANOVA > General Linear Model > Fit General Linear Model" }],
+    checks: [{ l: "Residuos", p: "Graphs > Four in one" }, { l: "Varianzas", p: "Stat > ANOVA > Test for Equal Variances" }],
+    read: "Revisa primero la interacción. Si es significativa, interpreta los factores con cuidado y mira el gráfico de interacción.",
+    fail: "", tip: "Hace falta información de ambos factores para cada combinación.",
+    post: { intro: "Solo para los términos significativos:", items: [
+      { l: "Comparaciones por factor: Tukey", p: "Fit General Linear Model > Comparisons > elegir el término > Tukey" },
+      { l: "Si la interacción es significativa", p: "Compara las combinaciones (término de interacción) y no los factores por separado" }],
+      note: "Con interacción significativa, los efectos principales pueden engañar." } },
+  corr: { name: "Correlación de Pearson", lead: "Mide la fuerza y la dirección de la relación lineal entre dos variables numéricas.",
+    h0: "ρ = 0 (no hay relación lineal)", h1: "ρ ≠ 0 (hay relación lineal)",
+    minitab: [{ l: "Prueba", p: "Stat > Basic Statistics > Correlation" }],
+    checks: [{ l: "Forma de la relación", p: "Graph > Scatterplot > Simple" }, { l: "Normalidad y atípicos", p: "Stat > Basic Statistics > Normality Test y Graph > Boxplot" }],
+    read: "El coeficiente r dice qué tan fuerte es la relación (de -1 a 1). El valor p dice si esa relación se distingue del azar, no qué tan fuerte es.",
+    fail: "Si la relación no es lineal o hay atípicos marcados, usa Spearman.",
+    tip: "Correlación no implica causalidad." },
+  spear: { name: "Correlación de Spearman", lead: "Mide una relación monótona (siempre creciente o siempre decreciente) usando rangos.",
+    h0: "No hay relación monótona", h1: "Hay relación monótona",
+    minitab: [{ l: "Prueba", p: "Stat > Basic Statistics > Correlation, y elegir el método Spearman en las opciones (puede variar según la versión)" }],
+    checks: [{ l: "Forma de la relación", p: "Graph > Scatterplot > Simple" }],
+    read: "Se lee igual que Pearson, pero no exige normalidad ni linealidad, y es menos sensible a los atípicos.",
+    fail: "Si la relación no es monótona (sube y baja), ninguna de las dos correlaciones la describe bien.",
+    tip: "Correlación no implica causalidad." },
+  reg: { name: "Regresión", lead: "Modela una variable respuesta a partir de una o más variables predictoras.",
+    h0: "El coeficiente del predictor = 0", h1: "El coeficiente del predictor ≠ 0",
+    minitab: [{ l: "Modelo", p: "Stat > Regression > Regression > Fit Regression Model" }],
+    checks: [{ l: "Residuos", p: "Graphs > Four in one" }, { l: "Observaciones influyentes", p: "Storage > Cook's distance, y revisar Unusual Observations" }],
+    read: "Cada predictor tiene su valor p. Mira también R² y la ecuación de regresión. No extrapoles fuera del rango de tus datos.",
+    fail: "", tip: "Los supuestos se revisan sobre los residuos: linealidad, varianza constante, normalidad e independencia." },
+  t1: { name: "Prueba t de una muestra", lead: "Compara la media de un grupo con un valor de referencia.",
+    h0: "μ = valor de referencia", h1: "μ ≠ valor de referencia",
+    minitab: [{ l: "Prueba", p: "Stat > Basic Statistics > 1-Sample t" }],
+    checks: [{ l: "Normalidad", p: "Stat > Basic Statistics > Normality Test" }],
+    read: "Si p es menor que α, la media difiere del valor de referencia.",
+    fail: "Si no hay normalidad: Wilcoxon de una muestra.", tip: "" },
+  w1: { name: "Wilcoxon de una muestra", lead: "Alternativa sin supuesto de normalidad para comparar con un valor de referencia.",
+    h0: "La mediana = valor de referencia", h1: "La mediana ≠ valor de referencia",
+    minitab: [{ l: "Prueba", p: "Stat > Nonparametrics > 1-Sample Wilcoxon" }],
+    checks: [{ l: "Simetría", p: "Graph > Histogram" }],
+    read: "Si p es menor que α, la mediana difiere del valor de referencia.", fail: "", tip: "" },
+  chiAssoc: { name: "Chi-cuadrado de asociación", lead: "Evalúa si dos variables categóricas están asociadas.",
+    h0: "Las variables son independientes", h1: "Las variables están asociadas",
+    minitab: [{ l: "Prueba", p: "Stat > Tables > Chi-Square Test for Association" }],
+    checks: [{ l: "Frecuencias esperadas", p: "Revisar que sean 5 o más en cada celda (aparecen en la salida)" }],
+    read: "Si p es menor que α, hay evidencia de asociación entre las variables. Mira qué celdas aportan más a la diferencia.",
+    fail: "Si hay frecuencias esperadas bajas, agrupa categorías o usa una prueba exacta.", tip: "" },
+  chiGof: { name: "Chi-cuadrado de bondad de ajuste", lead: "Compara las frecuencias observadas con las proporciones esperadas.",
+    h0: "Las proporciones son las esperadas", h1: "Al menos una proporción es distinta de la esperada",
+    minitab: [{ l: "Prueba", p: "Stat > Tables > Chi-Square Goodness-of-Fit Test (One Variable)" }],
+    checks: [{ l: "Frecuencias esperadas", p: "Revisar que sean 5 o más en cada categoría" }],
+    read: "Si p es menor que α, las frecuencias observadas no se ajustan a las proporciones esperadas.", fail: "", tip: "" },
+  prop2: { name: "Prueba de dos proporciones", lead: "Compara el porcentaje de éxitos entre dos grupos independientes.",
+    h0: "p₁ = p₂ (las proporciones son iguales)", h1: "p₁ ≠ p₂ (las proporciones son diferentes)",
+    minitab: [{ l: "Prueba", p: "Stat > Basic Statistics > 2 Proportions" }],
+    checks: [{ l: "Tamaño de muestra", p: "Debe haber suficientes éxitos y fracasos en cada grupo (al menos 5 de cada uno)" }],
+    read: "Si p es menor que α, las proporciones difieren. Mira la diferencia estimada y su intervalo de confianza.",
+    fail: "Con muestras pequeñas, usa la prueba exacta de Fisher, que Minitab muestra en la misma salida.", tip: "" }
+};
+
+var path = [];
+var current = "start";
+
+function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+function renderBar() {
+  var bar = document.getElementById("bar");
+  bar.innerHTML = "";
+  path.forEach(function (p, i) {
+    var c = el("button", "chip", p.label);
+    c.type = "button";
+    c.title = "Volver a esta pregunta";
+    c.addEventListener("click", function () { goTo(i); });
+    bar.appendChild(c);
+    bar.appendChild(el("span", "sep", "›"));
+  });
+  if (path.length) {
+    var last = bar.lastChild; if (last) bar.removeChild(last);
+  }
+  bar.appendChild(el("span", "spacer"));
+  if (path.length) {
+    var back = el("button", "ghost", "Volver");
+    back.type = "button";
+    back.addEventListener("click", function () { goTo(path.length - 1); });
+    bar.appendChild(back);
+    var rs = el("button", "ghost", "Reiniciar");
+    rs.type = "button";
+    rs.addEventListener("click", function () { path = []; current = "start"; render(); });
+    bar.appendChild(rs);
+  }
+}
+
+function goTo(i) {
+  var target = path[i];
+  current = target.node;
+  path = path.slice(0, i);
+  render();
+}
+
+function choose(o, node) {
+  path.push({ node: node, label: o.t });
+  current = o.to;
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function pathBlock(items) {
+  var wrap = el("div", "block");
+  items.forEach(function (x) {
+    var d = el("div", "path");
+    d.innerHTML = "<small>" + x.l + "</small>" + x.p;
+    wrap.appendChild(d);
+  });
+  return wrap;
+}
+
+function renderResult(key) {
+  var r = RESULTS[key];
+  var desc = r.kind === "desc";
+  var card = el("section", "card result");
+  card.appendChild(el("span", "tag", desc ? "Análisis recomendado" : "Prueba recomendada"));
+  card.appendChild(el("h2", null, r.name));
+  card.appendChild(el("p", "lead", r.lead));
+
+  var g = el("div", "grid two");
+  var b1 = el("div", "block");
+  if (r.h0) {
+    b1.appendChild(el("h3", null, "Hipótesis"));
+    b1.appendChild(el("p", "hyp", "H₀: " + r.h0));
+    b1.appendChild(el("p", "hyp", "H₁: " + r.h1));
+  } else {
+    b1.appendChild(el("h3", null, "Qué obtienes"));
+    b1.appendChild(el("p", null, r.gets));
+  }
+  g.appendChild(b1);
+
+  var b2 = el("div", "block");
+  b2.appendChild(el("h3", null, "Dónde está en Minitab"));
+  b2.appendChild(pathBlock(r.minitab));
+  g.appendChild(b2);
+
+  var b3 = el("div", "block");
+  b3.appendChild(el("h3", null, desc ? "Qué revisar" : "Antes de confiar en el resultado"));
+  b3.appendChild(pathBlock(r.checks));
+  g.appendChild(b3);
+
+  var b4 = el("div", "block");
+  b4.appendChild(el("h3", null, r.h0 ? "Cómo leer el valor p" : "Cómo leer el resultado"));
+  b4.appendChild(el("p", null, r.read));
+  if (r.fail) b4.appendChild(el("p", null, "<br>" + r.fail));
+  g.appendChild(b4);
+  card.appendChild(g);
+
+  if (r.post) {
+    var bp = el("div", "block");
+    bp.style.marginTop = "16px";
+    bp.appendChild(el("h3", null, "Pruebas post hoc (qué grupos difieren)"));
+    bp.appendChild(el("p", null, r.post.intro));
+    bp.appendChild(pathBlock(r.post.items));
+    if (r.post.note) bp.appendChild(el("p", "note", r.post.note));
+    card.appendChild(bp);
+  }
+  if (r.tip) card.appendChild(el("p", "note", "<b>Tip:</b> " + r.tip));
+
+  var act = el("div", "bar");
+  act.style.marginTop = "16px";
+  var again = el("button", "ghost", "Elegir otro análisis");
+  again.type = "button";
+  again.addEventListener("click", function () { path = []; current = "start"; render(); });
+  act.appendChild(again);
+  card.appendChild(act);
+  return card;
+}
+
+function render() {
+  renderBar();
+  var stage = document.getElementById("stage");
+  stage.innerHTML = "";
+  if (current.indexOf("R:") === 0) {
+    stage.appendChild(renderResult(current.slice(2)));
+    return;
+  }
+  var n = NODES[current];
+  var card = el("section", "card");
+  card.appendChild(el("p", "step", "Pregunta " + (path.length + 1)));
+  card.appendChild(el("h2", null, n.q));
+  if (n.help) card.appendChild(el("p", "lead", n.help));
+  var list = el("div", "opts");
+  n.opts.forEach(function (o) {
+    var b = el("button", "opt", "<b>" + o.t + "</b><span>" + o.d + "</span>");
+    b.type = "button";
+    b.addEventListener("click", function () { choose(o, current); });
+    list.appendChild(b);
+  });
+  card.appendChild(list);
+  if (n.hint) card.appendChild(el("p", "note", "<b>Cómo saberlo:</b> " + n.hint));
+  stage.appendChild(card);
+}
+
+render();
+</script>
